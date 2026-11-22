@@ -17,6 +17,13 @@ if ! docker exec "$PHP" test -f composer.json; then
     exit 1
 fi
 
+CONTAINER_UID="$(docker exec "$PHP" id -u)"
+OWNER_UID="$(stat -c %u composer.json)"
+if [ "$CONTAINER_UID" != "$OWNER_UID" ]; then
+    echo "Error: $PHP runs as uid $CONTAINER_UID but the clone is owned by uid $OWNER_UID: set APP_UID/APP_GID of the stack to the clone owner and update the stack." >&2
+    exit 1
+fi
+
 console() { docker exec "$PHP" php bin/console --no-interaction "$@"; }
 
 echo ">> composer install"
