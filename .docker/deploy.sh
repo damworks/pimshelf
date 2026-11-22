@@ -12,6 +12,11 @@ if ! docker ps --format '{{.Names}}' | grep -qx "$PHP"; then
     exit 1
 fi
 
+if ! docker exec "$PHP" test -f composer.json; then
+    echo "Error: /var/www/html in $PHP has no composer.json: APP_DIR of the stack does not point to the git clone (see README, troubleshooting)." >&2
+    exit 1
+fi
+
 console() { docker exec "$PHP" php bin/console --no-interaction "$@"; }
 
 echo ">> composer install"
