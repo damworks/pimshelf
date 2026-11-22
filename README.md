@@ -41,7 +41,7 @@ You don't need to have a PHP environment with composer installed.
     `docker compose exec php vendor/bin/pimcore-install`
     * When asked for admin user and password: Choose freely
     * This can take a while, up to 20 minutes
-    * If you select to install the SimpleBackendSearchBundle please make sure to add the `pimcore_search_backend_message` to your `.docker/supervisord.conf` file inside value for 'command' like `pimcore_maintenance` already is.
+    * If you select to install the SimpleBackendSearchBundle please make sure to add the `pimcore_search_backend_message` to your `.docker/supervisor/pimcore-messenger.conf` file inside value for 'command' like `pimcore_maintenance` already is.
 
 5. Run codeception tests:
    * `docker compose run --user=root --rm test-php chown -R $(id -u):$(id -g) var/ public/var/`
@@ -52,6 +52,18 @@ You don't need to have a PHP environment with composer installed.
     * The frontend: <http://localhost>
     * The admin interface, using the credentials you have chosen above:
       <http://localhost/admin>
+
+### Portainer Supervisor status
+
+After updating the server's checkout, update the Portainer stack to apply the new
+Supervisor configuration mount and recreate the container. Check the worker status with:
+
+```bash
+docker exec stage-pimshelf-supervisord supervisorctl status
+```
+
+Replace `stage-pimshelf` with `prod-pimshelf` for production. The control socket is
+local to the container and accessible only to the user running Supervisor.
 
 ## Pimcore Platform Version
 By default, Pimcore Platform Version is added as a dependency which ensures installation of compatible and in combination 
