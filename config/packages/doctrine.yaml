@@ -1,0 +1,16 @@
+# Database connection driven by environment variables:
+# - ddev: defaults in .env
+# - server: environment variables of the Portainer stack (real env vars win over .env)
+doctrine:
+    dbal:
+        connections:
+            default:
+                host: '%env(DATABASE_HOST)%'
+                port: '%env(int:DATABASE_PORT)%'
+                user: '%env(DATABASE_USER)%'
+                password: '%env(DATABASE_PASSWORD)%'
+                dbname: '%env(DATABASE_NAME)%'
+                server_version: '%env(DATABASE_SERVER_VERSION)%'
+                mapping_types:
+                    enum: string
+                    bit: boolean
