@@ -1,0 +1,71 @@
+name: Deploy
+
+# Two alternative deploy methods, selected by the repository variable DEPLOY_METHOD
+# (Settings > Secrets and variables > Actions > Variables):
+#   - runner (default, also when the variable is not set): job on the self-hosted runner installed on the server
+#   - ssh: job on a GitHub-hosted runner that connects to the server via SSH
+#
+# Both do the same thing: git pull in DEPLOY_DIR (bind-mounted into the Portainer stack)
+# and then .docker/deploy.sh <STACK_NAME>.
+
+on:
+  push:
+    branches:
+      - develop
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  BRANCH_NAME: ${{ github.ref_name }}
+  # master -> production, develop -> stage (must match the Portainer stacks)
+  DEPLOY_DIR: ${{ github.ref_name == 'master' && '/var/www/pimshelf/prod' || '/var/www/pimshelf/stage' }}
+  STACK_NAME: ${{ github.ref_name == 'master' && 'prod-pimshelf' || 'stage-pimshelf' }}
+
+jobs:
+  deploy-runner:
+    name: Deploy (self-hosted runner)
+    if: vars.DEPLOY_METHOD != 'ssh' && (github.ref_name == 'master' || github.ref_name == 'develop')
+    runs-on: [self-hosted, linux, pimshelf]
+    timeout-minutes: 30
+
+    steps:
+      - name: Update source code
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: |
+          echo "Updating $STACK_NAME ($BRANCH_NAME) in $DEPLOY_DIR..."
+          git fetch origin "$BRANCH_NAME"
+          git checkout "$BRANCH_NAME"
+          git pull --ff-only origin "$BRANCH_NAME"
+
+      - name: Composer, migrations, classes, cache, reload
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: bash .docker/deploy.sh "$STACK_NAME"
+
+  deploy-ssh:
+    name: Deploy (SSH)
+    if: vars.DEPLOY_METHOD == 'ssh' && (github.ref_name == 'master' || github.ref_name == 'develop')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: BRANCH_NAME,DEPLOY_DIR,STACK_NAME
+          command_timeout: 30m
+          script: |
+            set -eu
+            echo "Updating $STACK_NAME ($BRANCH_NAME) in $DEPLOY_DIR..."
+            cd "$DEPLOY_DIR"
+            git fetch origin "$BRANCH_NAME"
+            git checkout "$BRANCH_NAME"
+            git pull --ff-only origin "$BRANCH_NAME"
+            bash .docker/deploy.sh "$STACK_NAME"
