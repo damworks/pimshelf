@@ -1,8 +1,8 @@
-# Stack Portainer per pimshelf-from-scratch (server).
-# Il codice NON è dentro l'immagine: è un clone git su host (APP_DIR) montato nei container.
-# La pipeline GitHub Actions (self-hosted runner o SSH) aggiorna APP_DIR con git pull e poi lavora con `docker exec`.
+# Portainer stack for pimshelf (server).
+# The code is NOT in the image: it is a git clone on the host (APP_DIR) mounted in the containers.
+# The GitHub Actions pipeline (self-hosted runner or SSH) updates APP_DIR with git pull and then uses `docker exec`.
 #
-# Variabili richieste (impostale in Portainer > Stack > Environment variables):
+# Required variables (set them in Portainer > Stack > Environment variables):
 #   STACK_NAME, APP_DIR, APP_UID, APP_GID, WEB_PORT,
 #   DB_NAME, DB_USER, DB_PASSWORD, DB_ROOT_PASSWORD
 
@@ -75,5 +75,5 @@ services:
 
 volumes:
     database:
-        # nome esplicito: non dipende dal nome dato allo stack in Portainer
+        # Explicit name: does not depend on the name given to the stack in Portainer
         name: ${STACK_NAME}-database
